@@ -16,10 +16,13 @@ openssl genrsa -out server.key 2048
 openssl req -new -x509 -key server.key -out server.crt -days 365 -subj "/C=CA/ST=Ontario/L=Waterloo/O=VoNRTesting/OU=Dev/CN=localhost"
 
 # Run commands
+-> npm install<br>
 -> Run server:
-  path: server/server.js<br>
+  path: cd server/server.js<br>
+  node server.js
 -> Run client:
-  path: client/client.js
+  path: cd client/client.js<br>
+  node client.js
 
 # To add a new API handler in Server
 Create controller file in controllers/.<br>
