@@ -1,6 +1,6 @@
 async function getStatus(stream) {
-  stream.respond({ 'content-type': 'application/json', ':status': 200 });
-  stream.end(JSON.stringify({ status: 'ok', timestamp: new Date() }));
+  stream.respond({ ':status': 200, 'content-type': 'application/json' });
+  stream.end(JSON.stringify({ message: 'OK' }));
 }
 
 module.exports = { getStatus };
