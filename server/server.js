@@ -26,11 +26,6 @@ server.on('stream', async (stream, headers) => {
   }
 });
 
-<<<<<<< HEAD
 server.listen(3000, () => {
   console.log('HTTP2 TLS server running at https://localhost:3000');
-=======
-server.listen(9000, () => {
-  console.log('HTTP2 TLS server running at https://localhost:9000');
->>>>>>> d8b961b2785d0c5f3c8aa97112d0f54c64a33ded
 });
