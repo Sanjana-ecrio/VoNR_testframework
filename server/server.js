@@ -17,10 +17,15 @@ server.on('stream', async (stream, headers) => {
 
   console.log(`Received ${method} request for ${path}`);
 
-  await apiRoutes.handleRequest(stream, method, path, headers);
+  try {
+    await apiRoutes.handleRequest(stream, method, path, headers);
+  } catch (err) {
+    console.error('Error handling request:', err);
+    stream.respond({ ':status': 500, 'content-type': 'application/json' });
+    stream.end(JSON.stringify({ error: 'Internal Server Error' }));
+  }
 });
 
-server.listen(9000, () => {
-  console.log('HTTP2 TLS server running at https://localhost:8443');
+server.listen(3000, () => {
+  console.log('HTTP2 TLS server running at https://localhost:3000');
 });
- 
