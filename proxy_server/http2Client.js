@@ -1,42 +1,40 @@
-const http2 = require('http2');
-const fs = require('fs');
-const { MAIN_SERVER, MAIN_SERVER_CERT } = require('./config');
+// http2Client.js
+const http2 = require("http2");
+const { MAIN_SERVER } = require('./config');
 
-async function sendToHttp2Server(method, path, headers = {}, body = null) {
+async function sendToHttp2Server(method, url, path, headers = {}, body = "") {
   return new Promise((resolve, reject) => {
-    const clientOptions = {};
-    if (MAIN_SERVER_CERT) {
-      clientOptions.ca = fs.readFileSync(MAIN_SERVER_CERT);
-    }
 
-    const client = http2.connect(MAIN_SERVER, clientOptions);
-
-    client.on('error', (err) => reject(err));
-
-    const req = client.request({
-      ':method': method,
-      ':path': path,
-      ...headers
+    const client = http2.connect(url,  {
+      rejectUnauthorized: false, // trust self-signed certificate
     });
-
-    let chunks = [];
-    let statusCode = 200;
-
-    req.on('response', (h) => {
-      statusCode = h[':status'] || 200;
-    });
-
-    req.on('data', (chunk) => chunks.push(chunk));
-
-    req.on('end', () => {
-      client.close(); 
-      resolve({ response: Buffer.concat(chunks).toString(), statusCode });
-    });
-
-    req.on('error', (err) => {
-      client.close();
+    console.log("MAin server", client)
+    client.on("error", (err) => {
+      console.error("HTTP/2 connection error:", err);
       reject(err);
     });
+
+    const req = client.request({
+      ":method": method,
+      ":path": path,
+      ...headers,
+    });
+
+    let data = [];
+    req.on("data", (chunk) => data.push(chunk));
+    req.on("end", () => {
+      client.close();
+      resolve({
+        response: Buffer.concat(data).toString(),
+        statusCode: req.rstCode || 200,
+      });
+    });
+
+    if (body && method !== "GET") {
+      req.write(body);
+    }
+
+    req.end();
   });
 }
 
