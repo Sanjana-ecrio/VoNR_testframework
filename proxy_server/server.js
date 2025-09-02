@@ -3,6 +3,10 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const { sendToHttp2Server } = require("./http2Client");
+const logger = require('./logger');
+
+logger.info('Proxy server initialized');
+
 
 const app = express();
 
@@ -12,9 +16,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post("/", async (req, res) => {
   try {
-    console.log("Received Req", req.body);
+    
     const { method, url, body } = req.body;
-
+    logger.info({body}, "Received Req");
     if (!method || !url) {
       return res.status(400).send("Invalid request format (use: { method, path, body })");
     }
@@ -27,11 +31,11 @@ const serverUrl = `${urlObj.protocol}//${urlObj.host}`;
 // Extract path only
 const path = urlObj.pathname;
 
-console.log("Server URL:", serverUrl); 
+logger.info({serverUrl}, "Server URL:"); 
 // 👉 http://3.90.179.39:8080
 
-console.log("Path:", path);   
-    console.log("Proxying:", method, url, body);
+logger.info("Path:", path);   
+    logger.info({method, url, body}, "Proxying:");
 
     const headers = { "content-type": "application/json" };
 
@@ -48,11 +52,11 @@ console.log("Path:", path);
     res.status(statusCode).send(responseStr);
 
   } catch (err) {
-    console.error("Proxy error:", err);
+    logger.error(`Proxy error:", ${err}`);
     res.status(500).send("Proxy failed: " + err.message);
   }
 });
 
 app.listen(4000, () => {
-  console.log("Proxy server listening at http://localhost:4000");
+  logger.info("Proxy server listening at http://localhost:4000");
 });

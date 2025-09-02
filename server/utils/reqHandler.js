@@ -1,3 +1,5 @@
+const logger = require('./utils/logger');
+
 function parseRequestBody(stream) {
   return new Promise((resolve) => {
     let body = [];

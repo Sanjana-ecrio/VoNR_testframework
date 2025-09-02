@@ -1,6 +1,8 @@
 const http2 = require('http2');
 const fs = require('fs');
 const apiRoutes = require('./routes/apiRoutes');
+const logger = require('./utils/logger');
+
 
 const serverOptions = {
   key: fs.readFileSync('server.key'),
@@ -15,7 +17,7 @@ server.on('stream', async (stream, headers) => {
   const method = headers[':method'];
   const path = headers[':path'];
 
-  console.log(`Received ${method} request for ${path}`);
+  logger.info({ method, path }, "Received request");
 
   // Collect body chunks
   let body = '';
@@ -24,13 +26,13 @@ server.on('stream', async (stream, headers) => {
   });
 
   stream.on('end', async () => {
-    console.log("Full Body Received:", body);
+    logger.info({body}, "Full Body Received:");
 
     try {
       // Pass body along to your routes
       await apiRoutes.handleRequest(stream, method, path, headers, body);
     } catch (err) {
-      console.error('Error handling request:', err);
+      console.error({err}, 'Error handling request:');
       stream.respond({ ':status': 500, 'content-type': 'application/json' });
       stream.end(JSON.stringify({ error: 'Internal Server Error' }));
     }
@@ -38,5 +40,5 @@ server.on('stream', async (stream, headers) => {
 });
 
 server.listen(3000, () => {
-  console.log('HTTP2 TLS server running at https://localhost:3000');
+  logger.info('HTTP2 TLS server running at https://localhost:3000');
 });

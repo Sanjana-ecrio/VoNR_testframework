@@ -1,4 +1,5 @@
 const { parseRequestBody } = require('../utils/reqHandler');
+const logger = require('../utils/logger');
 
 async function postEcho(stream) {
   const body = await parseRequestBody(stream);

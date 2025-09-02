@@ -1,4 +1,5 @@
 const statusController = require("../controllers/status");
+const logger = require('../utils/logger');
 
 const controllers = {
   'GET /': statusController.getStatus,
@@ -25,7 +26,7 @@ async function handleRequest(stream, method, path, headers, body) {
 
       await controller(stream, headers, parsedBody);
     } catch (err) {
-      console.error("Error in controller:", err);
+      console.error({err}, "Error in controller:");
       stream.respond({ ':status': 500, 'content-type': 'application/json' });
       stream.end(JSON.stringify({ error: 'Internal Server Error' }));
     }

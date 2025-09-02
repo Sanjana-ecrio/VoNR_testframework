@@ -1,5 +1,7 @@
 const { sendToHttp2Server } = require('./http2Client');
 const { AUTH_TOKEN } = require('./config');
+const logger = require('./logger');
+
 async function handleProxy(req, res) {
   let body = [];
 

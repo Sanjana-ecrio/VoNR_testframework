@@ -1,6 +1,7 @@
 // http2Client.js
 const http2 = require("http2");
 const { MAIN_SERVER } = require('./config');
+const logger = require('./logger');
 
 async function sendToHttp2Server(method, url, path, headers = {}, body = "") {
   return new Promise((resolve, reject) => {
@@ -10,7 +11,7 @@ async function sendToHttp2Server(method, url, path, headers = {}, body = "") {
     });
     console.log("MAin server", client)
     client.on("error", (err) => {
-      console.error("HTTP/2 connection error:", err);
+      logger.error("HTTP/2 connection error:", err);
       reject(err);
     });
 

@@ -1,10 +1,12 @@
+const logger = require('../utils/logger');
+
 async function getStatus(stream) {
   stream.respond({ ':status': 200, 'content-type': 'application/json' });
   stream.end(JSON.stringify({ message: 'Hello from Main Server' }));
 }
 
 async function postStatus(stream, headers, body) {
-  console.log("Body inside statusController:", body);
+  logger.info({body}, "Body inside statusController:");
 
   let responseMessage;
 
@@ -22,4 +24,5 @@ async function postStatus(stream, headers, body) {
     response: responseMessage
   }));
 }
+
 module.exports = { getStatus, postStatus };
