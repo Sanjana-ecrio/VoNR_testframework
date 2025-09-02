@@ -20,10 +20,12 @@ openssl req -new -x509 -key server.key -out server.crt -days 365 -subj "/C=CA/ST
 -> Run server:
   path: cd server/server.js<br>
   node server.js
--> Run client:
-  path: cd client/client.js<br>
-  node client.js
-
+-> Run proxy-server:
+  path: cd proxy_server/server.js<br>
+  node server.js
+-> Run Proxy Request Tester:
+  path: cd proxy_server/index.html<br>
+    
 # To add a new API handler in Server
 Create controller file in controllers/.<br>
 Write handler function<br>
