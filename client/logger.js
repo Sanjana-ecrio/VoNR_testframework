@@ -7,8 +7,9 @@ if (!fs.existsSync("./logs")) {
 }
 
 // destination with sync:true = write immediately
-const fileStream = pino.destination({ dest: "./logs/proxy-server.log", sync: true });
+const fileStream = pino.destination({ dest: "./logs/client-server.log", sync: true });
 
+// create logger for both console + file
 const logger = pino(
   {
     level: "info",

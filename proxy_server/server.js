@@ -4,10 +4,11 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const { sendToHttp2Server } = require("./http2Client");
 const logger = require('./logger');
+const { connect } = require("./mqtt/mqtt-server");
 
 logger.info('Proxy server initialized');
 
-
+connect(); 
 const app = express();
 
 app.use(cors());
@@ -28,7 +29,6 @@ app.post("/", async (req, res) => {
 // Extract server URL (protocol + host:port)
 const serverUrl = `${urlObj.protocol}//${urlObj.host}`;
 
-// Extract path only
 const path = urlObj.pathname;
 
 logger.info({serverUrl}, "Server URL:"); 

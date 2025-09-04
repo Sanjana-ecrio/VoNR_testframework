@@ -19,7 +19,6 @@ server.on('stream', async (stream, headers) => {
 
   logger.info({ method, path }, "Received request");
 
-  // Collect body chunks
   let body = '';
   stream.on('data', (chunk) => {
     body += chunk;
@@ -29,8 +28,7 @@ server.on('stream', async (stream, headers) => {
     logger.info({body}, "Full Body Received:");
 
     try {
-      // Pass body along to your routes
-      await apiRoutes.handleRequest(stream, method, path, headers, body);
+         await apiRoutes.handleRequest(stream, method, path, headers, body);
     } catch (err) {
       console.error({err}, 'Error handling request:');
       stream.respond({ ':status': 500, 'content-type': 'application/json' });

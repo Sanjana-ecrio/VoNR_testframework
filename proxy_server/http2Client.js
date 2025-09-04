@@ -1,6 +1,7 @@
-// http2Client.js
 const http2 = require("http2");
-const { MAIN_SERVER } = require('./config');
+const dotenv = require("dotenv");
+
+dotenv.config();
 const logger = require('./logger');
 
 async function sendToHttp2Server(method, url, path, headers = {}, body = "") {
@@ -39,4 +40,46 @@ async function sendToHttp2Server(method, url, path, headers = {}, body = "") {
   });
 }
 
-module.exports = { sendToHttp2Server };
+
+async function handleAuthorize(payload) {
+  const client = http2.connect(process.env.API_BASE_URL, {
+    rejectUnauthorized: false, 
+  });
+
+  const path = `/nhss-ims-uecm/v1/impu-${encodeURIComponent(payload.ueImpu)}/authorize`;
+
+  const req = client.request({
+    ":method": "POST",
+    ":path": path,
+    "content-type": "application/json",
+  });
+
+  const body = JSON.stringify({
+    impi: payload.impi,
+    authorizationType: payload.authorizationType,
+    visitedNetworkIdentifier: payload.visitedNetworkIdentifier,
+  });
+
+  req.write(body);
+  req.end();
+
+  return new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", (chunk) => {
+      data += chunk;
+    });
+
+    req.on("end", () => {
+      client.close();
+      try {
+        resolve(JSON.parse(data));
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    req.on("error", reject);
+  });
+}
+
+module.exports = { handleAuthorize , sendToHttp2Server };

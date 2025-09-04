@@ -1,0 +1,11 @@
+{
+  "authorizationResult": "FIRST_REGISTRATION",
+  "scscfSelectionAssistanceInfo": {
+    "scscfCapabilityList": {
+      "optionalCapabilityList": [1]
+    },
+    "scscfNames": [
+      "sip:scscf.ims.mnc093.mcc208.3gppnetwork.org:6060"
+    ]
+  }
+}

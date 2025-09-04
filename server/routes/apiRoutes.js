@@ -1,39 +1,44 @@
 const statusController = require("../controllers/status");
+const authorizeController = require('../controllers/authorize');
 const logger = require('../utils/logger');
 
-const controllers = {
-  'GET /': statusController.getStatus,
-  'POST /': statusController.postStatus,
-  // Example for POST route:
-  // 'POST /myroute': myController.handleMyPost
-};
+const routes = [
+  {
+    method: 'POST',
+    pathRegex: /^\/nhss-ims-uecm\/v1\/impu-[^\/]+\/authorize$/,
+    controller: authorizeController.authorizeUE
+  },
+  // Future routes
+];
 
 async function handleRequest(stream, method, path, headers, body) {
-  const key = `${method} ${path}`;
-  const controller = controllers[key];
+  try {
+    const route = routes.find(r => r.method === method && r.pathRegex.test(path));
 
-  if (controller) {
-    try {
-      // Parse body if JSON
-      let parsedBody = null;
-      if (body) {
-        try {
-          parsedBody = JSON.parse(body);
-        } catch (err) {
-          parsedBody = body; // fallback to raw text
-        }
-      }
-
-      await controller(stream, headers, parsedBody);
-    } catch (err) {
-      console.error({err}, "Error in controller:");
-      stream.respond({ ':status': 500, 'content-type': 'application/json' });
-      stream.end(JSON.stringify({ error: 'Internal Server Error' }));
+    if (!route) {
+      stream.respond({ ':status': 404, 'content-type': 'application/json' });
+      stream.end(JSON.stringify({ error: 'Not Found', path }));
+      return;
     }
-  } else {
-    stream.respond({ ':status': 404, 'content-type': 'application/json' });
-    stream.end(JSON.stringify({ error: 'Not Found', path }));
+
+    const impuMatch = path.match(/impu-([^\/]+)/);
+    const impu = impuMatch ? decodeURIComponent(impuMatch[1]) : null;
+
+    let parsedBody = null;
+    if (body) {
+      try { parsedBody = JSON.parse(body); } 
+      catch { parsedBody = body; }
+    }
+
+    if (impu) parsedBody = { ...parsedBody, impuFromPath: impu };
+    await route.controller(stream, headers, parsedBody);
+  } catch (err) {
+    logger.error({ err }, 'Error in route handling');
+    stream.respond({ ':status': 500, 'content-type': 'application/json' });
+    stream.end(JSON.stringify({ error: 'Internal Server Error' }));
   }
 }
+
+
 
 module.exports = { handleRequest };
