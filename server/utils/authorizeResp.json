@@ -1,11 +1,182 @@
 {
-  "authorizationResult": "FIRST_REGISTRATION",
-  "scscfSelectionAssistanceInfo": {
-    "scscfCapabilityList": {
-      "optionalCapabilityList": [1]
+  "authorizeUE": {
+    "success": {
+      "FIRST_REGISTRATION": {
+        "status": "SUCESS",
+        "authorizationResult": "FIRST_REGISTRATION",
+        "scscfSelectionAssistanceInfo": {
+          "scscfCapabilityList": { "optionalCapabilityList": [1] },
+          "scscfNames": ["sip:scscf.ims.mnc093.mcc208.3gppnetwork.org:6060"]
+        }
+      }
     },
-    "scscfNames": [
-      "sip:scscf.ims.mnc093.mcc208.3gppnetwork.org:6060"
-    ]
+    "failure": {
+      "UNAUTHORIZED": {
+        "status": "FAILURE",
+        "errorCode": 401,
+        "errorMessage": "Unauthorized UE or invalid credentials"
+      }
+    }
+  },
+  "generateSipAuth": {
+    "success": {
+      "DEFAULT": {
+    "status": "SUCESS",
+        "impi": "impi2089300007487@ims.mnc093.mcc208.3gppnetwork.org",
+        "3gAkaAvs": [
+          {
+            "rand": "45e51cbac9ae1640e3d3a5ef5a0f68ce",
+            "xres": "7c63d36280b13435",
+            "autn": "8fa172a823b180003fb9af545ffb5cac",
+            "ck": "9d47b67cfc3138aafbe7d6d1bb4d3f26",
+            "ik": "5e70892d95493a8f131f6f95251a1585"
+          }
+        ]
+      }
+    },
+    "failure": {
+      "GENERATION_ERROR": {
+        "status": "FAILURE",
+        "errorCode": 500,
+        "errorMessage": "Failed to generate SIP auth vectors"
+      }
+    }
+  },
+  "scscfRegistration":{
+    "success": {
+      "DEFAULT": {
+        "status": "SUCESS",
+        "message": "S-CSCF Registration successful"
+      }
+    },
+    "failure": {
+      "GENERATION_ERROR": {
+        "status": "FAILURE",
+        "errorCode": 500,
+        "errorMessage": "S-CSCF registration failed"
+      }
+    }
+  },
+  "imsServiceProfiles": [
+    {
+      "publicIdentifierList": [
+        {
+          "publicIdentity": {
+            "imsPublicId": "impu-sip:2089300007487@ims.mnc093.mcc208.3gppnetwork.org",
+            "identityType": "DISTINCT_IMPU"
+          },
+          "barringIndicator": true
+        },
+        {
+          "publicIdentity": {
+            "imsPublicId": "impu-tel:886900007487",
+            "identityType": "DISTINCT_IMPU"
+          }
+        }
+      ],
+      "ifcs": {
+        "ifcList": [
+          {
+            "priority": 1,
+            "trigger": {
+              "conditionType": "CNF",
+              "sptList": [
+                {
+                  "sipMethod": "PUBLISH",
+                  "sipHeader": { "header": "Event", "content": ".*presence.*" },
+                  "sessionCase": "ORIGINATING_REGISTERED"
+                },
+                {
+                  "sipMethod": "SUBSCRIBE",
+                  "sipHeader": { "header": "Event", "content": ".*presence.*" },
+                  "sessionCase": "TERMINATING_REGISTERED"
+                }
+              ]
+            },
+            "appServer": {
+              "asUri": "sip:172.16.6.204:5065"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "appSessions": {
+    "success": {
+      "ascReqData": {
+        "medComponents": {
+          "1": {
+            "codecs": [
+              "uplink\noffer\n",
+              "downlink\nanswer\n"
+            ],
+            "fStatus": "ENABLED",
+            "medCompN": 1,
+            "medSubComps": {
+              "1": {
+                "fNum": 1,
+                "fDescs": [
+                  "permit out ip from 172.16.62.150 5060 to 10.72.0.1 5060",
+                  "permit in ip from 10.72.0.1 5060 to 172.16.62.150 5060"
+                ],
+                "fStatus": "ENABLED",
+                "flowUsage": "AF_SIGNALLING"
+              },
+              "2": {
+                "fNum": 2,
+                "fDescs": [
+                  "permit out ip from 172.16.62.150 5061 to 10.72.0.1 5061",
+                  "permit in ip from 10.72.0.1 5061 to 172.16.62.150 5061"
+                ],
+                "fStatus": "ENABLED",
+                "flowUsage": "AF_SIGNALLING"
+              }
+            },
+            "medType": "CONTROL"
+          }
+        },
+        "notifUri": "http://10.1.21.38:8000/npcf-policyauthorization/v1/rx-proxy/10.72.0.1",
+        "supi": "imsi-2089300007487",
+        "suppFeat": "10001",
+        "ueIpv4": "10.72.0.1"
+      },
+      "ascRespData": {
+        "suppFeat": "000001"
+      }
+    },
+    "failure": {
+      "error": "App session creation failed"
+    }
+  },
+  "modAppSession": {
+    "success": {
+      "ascRespData": {
+        "medComponents": {
+          "3": {
+            "codecs": [
+              "downlink\\noffer\\n...",
+              "uplink\\nanswer\\n..."
+            ],
+            "fStatus": "ENABLED",
+            "marBwDl": "41000",
+            "marBwUl": "41000",
+            "medCompN": 3,
+            "medSubComps": {
+              "5": {
+                "fNum": 5,
+                "fDescs": [
+                  "permit out 17 from 172.16.62.150 9998 to 10.72.0.1 65432",
+                  "permit in 17 from 10.72.0.1 65432 to 172.16.62.150 9998"
+                ]
+              }
+            },
+            "medType": "AUDIO"
+          }
+        }
+      }
+    },
+    "failure": {
+      "error": "App session creation failed"
+    }
   }
 }

@@ -1,0 +1,30 @@
+{
+  "modAppSession": {
+    "success": {
+      "ascRespData": {
+        "medComponents": {
+          "3": {
+            "codecs": [
+              "downlink\\noffer\\n...",
+              "uplink\\nanswer\\n..."
+            ],
+            "fStatus": "ENABLED",
+            "marBwDl": "41000",
+            "marBwUl": "41000",
+            "medCompN": 3,
+            "medSubComps": {
+              "5": {
+                "fNum": 5,
+                "fDescs": [
+                  "permit out 17 from 172.16.62.150 9998 to 10.72.0.1 65432",
+                  "permit in 17 from 10.72.0.1 65432 to 172.16.62.150 9998"
+                ]
+              }
+            },
+            "medType": "AUDIO"
+          }
+        }
+      }
+    }
+  }
+}
