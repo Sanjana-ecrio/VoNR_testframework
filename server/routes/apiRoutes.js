@@ -18,7 +18,7 @@ const routes = [
     controller: generateSipAuthController.generateSipAuth
   },
   {
-    method: 'POST',
+    method: 'PUT',
     pathRegex: /^\/nhss-ims-uecm\/v1\/impu-[^\/]+\/scscf-registration$/,
     controller: scscfRegistrationController.scscfRegistration
   },

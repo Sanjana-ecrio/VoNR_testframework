@@ -138,7 +138,7 @@ async function handleScscfRegidtration(payload) {
 
   const path = `/nhss-ims-uecm/v1/impu-${encodeURIComponent(payload.impu)}/scscf-registration`
   const req = client.request({
-    ":method": "POST",
+    ":method": "PUT",
     ":path": path,
     "content-type": "application/json",
   });
