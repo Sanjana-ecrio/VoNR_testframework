@@ -214,32 +214,81 @@ async function handleGetProfileData(payload) {
   });
 }
 
+// async function handleAppSession(payload) {
+//   const client = http2.connect(process.env.API_BASE_URL, {
+//     rejectUnauthorized: false, 
+//   });
+
+//   const path = `/npcf-policyauthorization/v1/app-sessions`
+//   const req = client.request({
+//     ":method": "POST",
+//     ":path": path,
+//     "content-type": "application/json",
+//   });
+
+//   console.log("payload", payload)
+//   if (!payload.ascReqData) {
+//     throw new Error("Missing required fields for scscf-registration");
+//   }
+
+//   const body = JSON.stringify({
+//     ascReqData : payload.ascReqData,
+//   });
+
+//   req.write(body);
+//   req.end();
+
+//   return new Promise((resolve, reject) => {
+//     let data = "";
+//     req.on("data", (chunk) => {
+//       data += chunk;
+//     });
+
+//     req.on("end", () => {
+//       client.close();
+//       try {
+//         console.log("Received data: ", data)
+//         resolve(JSON.parse(data));
+//       } catch (err) {
+//         reject(err);
+//       }
+//     });
+
+//     req.on("error", reject);
+//   });
+// }
+
+
 async function handleAppSession(payload) {
   const client = http2.connect(process.env.API_BASE_URL, {
-    rejectUnauthorized: false, 
+    rejectUnauthorized: false,
   });
 
-  const path = `/npcf-policyauthorization/v1/app-sessions`
+  const path = `/npcf-policyauthorization/v1/app-sessions`;
   const req = client.request({
     ":method": "POST",
     ":path": path,
     "content-type": "application/json",
   });
 
-  console.log("payload", payload.action, payload.ascReqData)
   if (!payload.ascReqData) {
-    throw new Error("Missing required fields for scscf-registration");
+    throw new Error("Missing required fields for app-session");
   }
 
-  const body = JSON.stringify({
-    ascReqData : payload.ascReqData,
-  });
-
+  const body = JSON.stringify({ ascReqData: payload.ascReqData });
   req.write(body);
   req.end();
 
   return new Promise((resolve, reject) => {
     let data = "";
+    let statusCode;
+
+    // Capture status from headers
+    req.on("response", (headers) => {
+      statusCode = headers[":status"];
+      console.log("response headers:", headers);
+    });
+
     req.on("data", (chunk) => {
       data += chunk;
     });
@@ -247,15 +296,26 @@ async function handleAppSession(payload) {
     req.on("end", () => {
       client.close();
       try {
-        resolve(JSON.parse(data));
+        const parsed = data ? JSON.parse(data) : null;
+        console.log(`recieved status: ${statusCode}, body:`, parsed);
+
+        resolve({
+          statusCode,
+          body: parsed,
+        });
       } catch (err) {
         reject(err);
       }
     });
 
-    req.on("error", reject);
+    req.on("error", (err) => {
+      client.close();
+      reject(err);
+    });
   });
 }
+
+
 
 async function handleModAppSession(payload) {
   if (!payload.sbiEndpoint || !payload.ascReqData) {

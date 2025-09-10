@@ -1,27 +1,22 @@
 {
   "authorizeUE": {
     "success": {
-      "FIRST_REGISTRATION": {
-        "status": "SUCESS",
+        "status": "SUCCESS",
         "authorizationResult": "FIRST_REGISTRATION",
         "scscfSelectionAssistanceInfo": {
           "scscfCapabilityList": { "optionalCapabilityList": [1] },
           "scscfNames": ["sip:scscf.ims.mnc093.mcc208.3gppnetwork.org:6060"]
         }
-      }
     },
     "failure": {
-      "UNAUTHORIZED": {
         "status": "FAILURE",
         "errorCode": 401,
         "errorMessage": "Unauthorized UE or invalid credentials"
-      }
     }
   },
   "generateSipAuth": {
     "success": {
-      "DEFAULT": {
-    "status": "SUCESS",
+    "status": "SUCCESS",
         "impi": "impi2089300007487@ims.mnc093.mcc208.3gppnetwork.org",
         "3gAkaAvs": [
           {
@@ -32,22 +27,18 @@
             "ik": "5e70892d95493a8f131f6f95251a1585"
           }
         ]
-      }
     },
     "failure": {
-      "GENERATION_ERROR": {
         "status": "FAILURE",
         "errorCode": 500,
         "errorMessage": "Failed to generate SIP auth vectors"
       }
-    }
   },
   "scscfRegistration":{
     "success": {
-      "DEFAULT": {
-        "status": "SUCESS",
+        "status": "SUCCESS",
+        "statusCode": 201,
         "message": "S-CSCF Registration successful"
-      }
     },
     "failure": {
       "GENERATION_ERROR": {
@@ -57,7 +48,9 @@
       }
     }
   },
-  "imsServiceProfiles": [
+  "getProfileData":{
+    "success": {
+      "imsServiceProfiles":  [
     {
       "publicIdentifierList": [
         {
@@ -100,7 +93,16 @@
         ]
       }
     }
-  ],
+  ]
+    },
+    "failure": {
+      "GENERATION_ERROR": {
+        "status": "FAILURE",
+        "errorCode": 500,
+        "errorMessage": "Fetch Profile data failed"
+      }
+    }
+  },
   "appSessions": {
     "success": {
       "ascReqData": {

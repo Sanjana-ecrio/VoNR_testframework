@@ -1,7 +1,7 @@
 const { handleFileResponse } = require("./fileresponse");
 
 async function createAppSession(stream, headers, body) {
-  if (!body?.ascReqData || !body.ascReqData.supi || !body.ascReqData.ueIpv4) {
+  if (!body.ascReqData || !body.ascReqData.supi || !body.ascReqData.ueIpv4) {
     stream.respond({ ":status": 400, "content-type": "application/json" });
     stream.end(JSON.stringify({ error: "Missing required fields" }));
     return;

@@ -114,8 +114,7 @@ function handleFileResponse(stream, headers, body, routeKey, isFailure = false, 
 
     stream.respond({ ":status": statusCode, "content-type": "application/json" });
     stream.end(JSON.stringify(responseData));
-
-    logger.info({ routeKey, body, response: responseData }, "File response sent");
+    logger.info(`File response sent Status: ${statusCode} | Response : ${responseData}`);
   } catch (err) {
     logger.error({ err }, `Error in handleFileResponse for ${routeKey}`);
     stream.respond({ ":status": 500, "content-type": "application/json" });

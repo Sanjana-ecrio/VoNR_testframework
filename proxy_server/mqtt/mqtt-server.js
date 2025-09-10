@@ -40,13 +40,14 @@ function connect() {
       try {
         const payload = JSON.parse(message.toString());
         const response = await handleAuthorize(payload);
-        const { requestId } = payload;
+        const { requestId } = payload.requestId;
 
-        logger.info({ response }, "HTTP2 Server response");
+        logger.info({ payload }, "Payload from MQTT");
         const mqttResponse = {
           requestId,
           ...response,
         };
+        logger.info({ response }, "Response Received");
         logger.info({ mqttResponse }, "MQTT Response to be Published");
 
  
@@ -63,7 +64,8 @@ function connect() {
           JSON.stringify({
             requestId: payload?.requestId || "unknown",
             status: "FAILURE",
-            error: err.message,
+            errorCode: 401,
+            error: "Unauthorized UE or invalid credentials",
           })
         );
       }
@@ -94,6 +96,7 @@ function connect() {
           JSON.stringify({
             requestId: payload?.requestId || "unknown",
             status: "FAILURE",
+            errorCode: payload?.errorCode || 500,
             errorMessage: err.message,
           })
         );
@@ -103,9 +106,10 @@ function connect() {
         const payload = JSON.parse(message.toString());
         const response = await handleScscfRegidtration(payload); 
         const { requestId } = payload;
+        const status =response.statusCode;
 
         const mqttResponse = {
-          requestId,
+          status: status,
           ...response,
         };
 
@@ -125,16 +129,18 @@ function connect() {
           JSON.stringify({
             requestId: payload?.requestId || "unknown",
             status: "FAILURE",
+            errorCode: payload?.errorCode || 500,
             errorMessage: err.message,
           })
         );
       }
-    } else if (topic === "commPack/command/getProfileData") {
+    } else if (topic === "CommPack/command/getProfileData") {
   try {
     const payload = JSON.parse(message.toString());
     const response = await handleGetProfileData(payload);
     const { correlationId, replyTo } = payload;
 
+    logger.info({payload}, "Received Payload:")
     const mqttResponse = {
       type: "SBI_RESPONSE",
       correlationId: correlationId || "unknown",
@@ -160,7 +166,7 @@ function connect() {
       errorMessage: err.message,
     };
 
-    const replyTopic = payload.replyTo || "commPack/response/nhss-ims-sdm/profile-data";
+    const replyTopic = payload.replyTo || "CommPack/response/nhss-ims-sdm/profile-data";
     client.publish(replyTopic, JSON.stringify(errorResponse));
   } 
 } else if (topic === "CommPack/command/createAppSession") {
@@ -168,14 +174,19 @@ function connect() {
     const payload = JSON.parse(message.toString());
     const response = await handleAppSession(payload); 
     const requestId = payload.requestId;
-    const mqttResponse = {
-      requestId,
-      ...response,
-    };
+    const status =response.statusCode;
 
+    const mqttResponse = {
+      status : status,
+      ...response.body
+    };
     client.publish(
       "CommPack/response/createAppSession",
       JSON.stringify(mqttResponse)
+    );
+    logger.info(
+      { response },
+      "Response from HTTP2 createAppSession"
     );
     logger.info(
       { mqttResponse },
@@ -187,7 +198,7 @@ function connect() {
     client.publish(
       "CommPack/response/createAppSession",
       JSON.stringify({
-        requestId: payload?.requestId || "unknown",
+        // requestId: payload?.requestId || "unknown",
         status: "FAILURE",
         errorMessage: err.message,
       })

@@ -1,5 +1,9 @@
-const statusController = require("../controllers/status");
 const authorizeController = require('../controllers/authorize');
+const generateSipAuthController = require('../controllers/generateSipAuth');
+const scscfRegistrationController = require('../controllers/scscfregistration');
+const profileDataController = require('../controllers/profiledata');
+const appSessionsController = require("../controllers/appSessions");
+
 const logger = require('../utils/logger');
 
 const routes = [
@@ -8,7 +12,26 @@ const routes = [
     pathRegex: /^\/nhss-ims-uecm\/v1\/impu-[^\/]+\/authorize$/,
     controller: authorizeController.authorizeUE
   },
-  // Future routes
+  {
+    method: 'POST',
+    pathRegex: /^\/nhss-ueau\/v1\/impi[^\/]+\/securityinformation\/generate-sip-auth-data$/,
+    controller: generateSipAuthController.generateSipAuth
+  },
+  {
+    method: 'POST',
+    pathRegex: /^\/nhss-ims-uecm\/v1\/impu-[^\/]+\/scscf-registration$/,
+    controller: scscfRegistrationController.scscfRegistration
+  },
+  {
+    method: 'GET',
+    pathRegex: /^\/nhss-ims-sdm\/v1\/impu-[^\/]+\/ims-data\/profile-data$/,
+    controller: profileDataController.getProfileData
+  },
+  {
+  method: "POST",
+  pathRegex: /^\/npcf-policyauthorization\/v1\/app-sessions$/,
+  controller: appSessionsController.createAppSession,
+},
 ];
 
 async function handleRequest(stream, method, path, headers, body) {
@@ -21,16 +44,25 @@ async function handleRequest(stream, method, path, headers, body) {
       return;
     }
 
-    const impuMatch = path.match(/impu-([^\/]+)/);
-    const impu = impuMatch ? decodeURIComponent(impuMatch[1]) : null;
-
     let parsedBody = null;
     if (body) {
-      try { parsedBody = JSON.parse(body); } 
-      catch { parsedBody = body; }
+      try {
+        parsedBody = JSON.parse(body);
+      } catch {
+        parsedBody = body;
+      }
     }
 
-    if (impu) parsedBody = { ...parsedBody, impuFromPath: impu };
+    const impuMatch = path.match(/impu-([^\/]+)/);
+    if (impuMatch) {
+      parsedBody = { ...parsedBody, impuFromPath: decodeURIComponent(impuMatch[1]) };
+    }
+
+    const impiMatch = path.match(/impi([^\/@]+@[^\/]+)/);
+    if (impiMatch) {
+      parsedBody = { ...parsedBody, impiFromPath: decodeURIComponent(impiMatch[1]) };
+    }
+
     await route.controller(stream, headers, parsedBody);
   } catch (err) {
     logger.error({ err }, 'Error in route handling');
@@ -38,7 +70,5 @@ async function handleRequest(stream, method, path, headers, body) {
     stream.end(JSON.stringify({ error: 'Internal Server Error' }));
   }
 }
-
-
 
 module.exports = { handleRequest };
