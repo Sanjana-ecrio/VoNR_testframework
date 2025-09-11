@@ -3,7 +3,7 @@ const generateSipAuthController = require('../controllers/generateSipAuth');
 const scscfRegistrationController = require('../controllers/scscfregistration');
 const profileDataController = require('../controllers/profiledata');
 const appSessionsController = require("../controllers/appSessions");
-
+const modAppSessionController = require("../controllers/modappSessions")
 const logger = require('../utils/logger');
 
 const routes = [
@@ -14,8 +14,13 @@ const routes = [
   },
   {
     method: 'POST',
-    pathRegex: /^\/nhss-ueau\/v1\/impi[^\/]+\/securityinformation\/generate-sip-auth-data$/,
+    pathRegex: /^\/nhss-ims-ueau\/v1\/impu[^\/]+\/security-information\/generate-sip-auth-data$/,
     controller: generateSipAuthController.generateSipAuth
+  },
+  {
+    method: 'PATCH',
+    pathRegex: /^\/npcf-policyauthorization\/v1\/app-sessions\/appSess-imsi-[0-9]+-[0-9]+$/,
+    controller: modAppSessionController.modAppSession
   },
   {
     method: 'PUT',

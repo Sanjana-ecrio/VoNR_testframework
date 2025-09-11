@@ -2,22 +2,24 @@ const mqtt = require("mqtt");
 const dotenv = require("dotenv");
 const logger = require("../logger");
 const path = require("path");
+const config = require('../config');
+const  mqttTopics = require('./topics');
 const { handleAuthorize, handleGenerateSipAuth, handleScscfRegidtration, handleGetProfileData, handleAppSession, handleModAppSession} = require("../http2Client");
 dotenv.config({
   path: path.resolve(__dirname, "../.env"),
 });
 
 console.log("ENV ->", {
-  broker: process.env.MQTT_BROKER,
-  port: process.env.MQTT_PORT,
-  topic: process.env.TOPIC,
+  broker: config.MQTT_BROKER,
+  port: config.MQTT_PORT,
+  topic:  mqttTopics.TOPIC,
 });
 
 let client = null;
-
+  
 function connect() {
   client = mqtt.connect(
-    `mqtt://${process.env.MQTT_BROKER}:${process.env.MQTT_PORT}`
+    `mqtt://${config.MQTT_BROKER}:${config.MQTT_PORT}`
   );
 
   client.on("connect", () => {
@@ -36,7 +38,7 @@ function connect() {
   client.on("message", async (topic, message) => {
     logger.info(`Message received on ${topic}: ${message.toString()}`);
 
-    if (topic === "CommPack/command/authorize") {
+    if (topic ===  mqttTopics.TOPIC_CMD_AUTHORIZE) {
       try {
         const payload = JSON.parse(message.toString());
         const response = await handleAuthorize(payload);
@@ -52,7 +54,7 @@ function connect() {
 
  
         client.publish(
-          "CommPack/response/authorize",
+           mqttTopics.TOPIC_RESP_AUTHORIZE,
           JSON.stringify(mqttResponse)
         );
         logger.info("Response published to CommPack/response/authorize");
@@ -69,7 +71,7 @@ function connect() {
           })
         );
       }
-    } else if (topic === "CommPack/command/generateSipAuth") {
+    } else if (topic === mqttTopics.TOPIC_CMD_SIP_GENERATE) {
       try {
         const payload = JSON.parse(message.toString());
         const response = await handleGenerateSipAuth(payload);
@@ -81,7 +83,7 @@ function connect() {
         };
 
         client.publish(
-          "CommPack/response/generateSipAuth",
+         mqttTopics.TOPIC_RESP_SIP_GENERATE,
           JSON.stringify(mqttResponse)
         );
         logger.info(
@@ -101,7 +103,7 @@ function connect() {
           })
         );
       }
-    } else if (topic === "CommPack/command/scscfRegistration") {
+    } else if (topic === mqttTopics.TOPIC_CMD_SIP_REGISTRATION) {
       try {
         const payload = JSON.parse(message.toString());
         const response = await handleScscfRegidtration(payload); 
@@ -114,7 +116,7 @@ function connect() {
         };
 
         client.publish(
-          "CommPack/response/scscfRegistration",
+          mqttTopics.TOPIC_RESP_SIP_REGISTRATION,
           JSON.stringify(mqttResponse)
         );
         logger.info(
@@ -134,7 +136,7 @@ function connect() {
           })
         );
       }
-    } else if (topic === "CommPack/command/getProfileData") {
+    } else if (topic === mqttTopics.TOPIC_CMD_PROFILEDATA) {
   try {
     const payload = JSON.parse(message.toString());
     const response = await handleGetProfileData(payload);
@@ -148,7 +150,7 @@ function connect() {
       body: response?.body || response,
     };
 
-    const replyTopic = replyTo || "commPack/response/nhss-ims-sdm/profile-data";
+    const replyTopic = replyTo || mqttTopics.TOPIC_RESP_PROFILEDATA;
     client.publish(replyTopic, JSON.stringify(mqttResponse));
 
     logger.info(
@@ -169,7 +171,7 @@ function connect() {
     const replyTopic = payload.replyTo || "CommPack/response/nhss-ims-sdm/profile-data";
     client.publish(replyTopic, JSON.stringify(errorResponse));
   } 
-} else if (topic === "CommPack/command/createAppSession") {
+} else if (topic === mqttTopics.TOPIC_CMD_CREATE_APPSESSION) {
   try {
     const payload = JSON.parse(message.toString());
     const response = await handleAppSession(payload); 
@@ -181,7 +183,7 @@ function connect() {
       ...response.body
     };
     client.publish(
-      "CommPack/response/createAppSession",
+      mqttTopics.TOPIC_RESP_CREATE_APPSESSION,
       JSON.stringify(mqttResponse)
     );
     logger.info(
@@ -204,20 +206,18 @@ function connect() {
       })
     );
   }
-  } else if (topic === "CommPack/command/modAppSession") {
+  } else if (topic === mqttTopics.TOPIC_CMD_MOD_APPSESSION) {
   try {
     const payload = JSON.parse(message.toString());
     const response = await handleModAppSession(payload);
     const { requestId } = payload;
 
     const mqttResponse = {
-      requestId,
-      status: 200,
       ...response,
     };
 
     client.publish(
-      "CommPack/response/modAppSession",
+      mqttTopics.TOPIC_RESP_MOD_APPSESSION,
       JSON.stringify(mqttResponse)
     );
     logger.info(
@@ -243,7 +243,7 @@ function connect() {
 }
 
 function subscribe() {
-  const topic = process.env.SUBSCRIBE_TOPIC;
+  const topic =  mqttTopics.SUBSCRIBE_TOPIC;
   client.subscribe(topic, (err) => {
     if (err) {
       logger.error(`Subscription error: ${err.message}`);

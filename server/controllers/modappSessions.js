@@ -1,21 +1,17 @@
-const fs = require("fs");
-const path = require("path");
+const { handleFileResponse } = require("./fileresponse");
 
-const responseFile = path.join(__dirname, "..", "utils", "responses.json");
-
-async function modAppSession(payload) {
-  if (!payload.sbiEndpoint || !payload.ascReqData) {
-    throw new Error("Missing required fields for modAppSession");
+async function modAppSession(stream, headers, body) {
+  console.log("Body Received: ", body)
+  if (!body.ascReqData) {
+    stream.respond({ ":status": 400, "content-type": "application/json" });
+    stream.end(JSON.stringify({ error: "Missing required fields for modAppSession" }));
+    return;
   }
 
-  const fileContent = fs.readFileSync(responseFile, "utf8");
-  const allResponses = JSON.parse(fileContent);
+  const isFailure = body.forceFailure === true;
 
-  if (!allResponses.modAppSession || !allResponses.modAppSession.success) {
-    throw new Error("No response defined for modAppSession in file");
-  }
 
-  return allResponses.modAppSession.success;
+  handleFileResponse(stream, headers, body, "modAppSession", isFailure, 200);
 }
 
-module.exports = { handleModAppSession };
+module.exports = { modAppSession };
