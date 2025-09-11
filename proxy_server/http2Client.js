@@ -4,7 +4,27 @@ const fs = require("fs");
 const path = require("path");
 const config = require('./config');
 
-const responseFile = path.join(__dirname, "utils", "responses.json");
+
+function createHttp2Client() {
+  let url;
+  let options = {};
+
+  if (config.SECURED_SBI) {
+    url = `https://${config.SBI_ENDPOINT}`;
+    options = {
+      rejectUnauthorized: false,
+      ca: fs.existsSync(config.SBI_ENDPOINT_CERT)
+        ? fs.readFileSync(config.SBI_ENDPOINT_CERT)
+        : undefined,
+    };
+  } else {
+    url = `http://${config.SBI_ENDPOINT}`;
+    options = {};
+  }
+
+  return http2.connect(url, options);
+}
+
 
 const logger = require('./logger');
 
@@ -46,9 +66,7 @@ async function sendToHttp2Server(method, url, path, headers = {}, body = "") {
 
 
 async function handleAuthorize(payload) {
-  const client = http2.connect(config.SBI_ENDPOINT, {
-    rejectUnauthorized: false, 
-  });
+  const client = createHttp2Client();
 
   if (!payload.ueImpu) {
     throw new Error("Missing required fields for getProfileData");
@@ -90,9 +108,7 @@ async function handleAuthorize(payload) {
 }
 
 async function handleGenerateSipAuth(payload) {
-  const client = http2.connect(config.SBI_ENDPOINT, {
-    rejectUnauthorized: false, 
-  });
+  const client = createHttp2Client();
 
   if (!payload.ueImpu) {
     throw new Error("Missing required fields for getProfileData");
@@ -138,10 +154,7 @@ async function handleGenerateSipAuth(payload) {
 }
 
 async function handleScscfRegidtration(payload) {
-  const client = http2.connect(config.SBI_ENDPOINT, {
-    rejectUnauthorized: false, 
-  });
-
+  const client = createHttp2Client();
   if (!payload.ueImpu) {
     throw new Error("Missing required fields for getProfileData");
   }
@@ -192,9 +205,7 @@ async function handleGetProfileData(payload) {
 
    const path = `/nhss-ims-sdm/v1/impu-${encodeURIComponent(payload.ueImpu)}/ims-data/profile-data`
 
-  const client = http2.connect(config.SBI_ENDPOINT, {
-    rejectUnauthorized: false,
-  });
+  const client = createHttp2Client();
 
   const req = client.request({
     ":method": payload.method || "GET",
@@ -230,9 +241,7 @@ async function handleGetProfileData(payload) {
 
 
 async function handleAppSession(payload) {
-  const client = http2.connect(config.SBI_ENDPOINT, {
-    rejectUnauthorized: false,
-  });
+  const client = createHttp2Client();
 
   const path = `/npcf-policyauthorization/v1/app-sessions`;
   const req = client.request({
@@ -292,9 +301,7 @@ async function handleModAppSession(payload) {
     throw new Error("Missing required fields for modAppSession");
   }
   
-  const client = http2.connect(config.SBI_ENDPOINT, {
-    rejectUnauthorized: false,
-  });
+  const client = createHttp2Client();
 
   const method = payload.httpMethod || "PATCH"
   const path = payload.sbiEndpoint;
