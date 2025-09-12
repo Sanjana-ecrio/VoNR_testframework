@@ -79,12 +79,15 @@ async function handleAuthorize(payload) {
     "content-type": "application/json",
   });
 
+  logger.info({path}, "HTTP request path")
+
   const body = JSON.stringify({
     impi: payload.impi,
     authorizationType: payload.authorizationType,
     visitedNetworkIdentifier: payload.visitedNetworkIdentifier,
   });
 
+  logger.info({body}, "HTTP Request body")
   req.write(body);
   req.end();
 

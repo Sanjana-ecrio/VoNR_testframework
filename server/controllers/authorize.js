@@ -9,7 +9,17 @@ async function authorizeUE(stream, headers, body) {
 
   const isFailure = body.forceFailure === true;
 
-  handleFileResponse(stream, headers, body, "authorizeUE", isFailure, 200);
+  //  after "@"
+  const domain = body.impi.split("@")[1];
+
+  // dynamic org
+  const dynamicData = {
+    scscfSelectionAssistanceInfo: {
+      scscfNames: [`sip:scscf.${domain}:6060`]
+    }
+  };
+
+  handleFileResponse(stream, headers, body, "authorizeUE", isFailure, 200, dynamicData);
 }
 
 module.exports = { authorizeUE };

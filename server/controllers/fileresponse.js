@@ -1,96 +1,26 @@
-const fs = require('fs');
-const path = require('path');
-const logger = require('../utils/logger');
+const fs = require("fs");
+const path = require("path");
+const logger = require("../utils/logger"); // assuming you already have this
 
-const responseFile = path.join(__dirname, '..', 'utils', 'authorizeResp.json');
+// 
+function deepMerge(target, source) {
+  for (const key of Object.keys(source)) {
+    if (
+      source[key] instanceof Object &&
+      key in target &&
+      target[key] instanceof Object
+    ) {
+      target[key] = deepMerge(target[key], source[key]);
+    } else {
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
 
-/**
- * Generic file-based response handler
- * @param {Object} stream - HTTP/2 stream
- * @param {Object} headers - request headers
- * @param {Object} body - request body
- * @param {String} routeKey - which route to pick from JSON (e.g. "authorizeUE" or "generateSipAuth")
- * @param {Boolean} isFailure - whether to send failure response
- */
-// function handleFileResponse(stream, headers, body, routeKey, isFailure = false) {
-//   try {
-//     const fileContent = fs.readFileSync(responseFile, 'utf8');
-//     const allResponses = JSON.parse(fileContent);
-
-//     if (!allResponses[routeKey]) {
-//       throw new Error(`No responses defined for routeKey: ${routeKey}`);
-//     }
-
-//     const responseData = isFailure
-//       ? allResponses[routeKey].failure
-//       : allResponses[routeKey].success;
-
-//     // Log request/response
-//     const logEntry = {
-//       timestamp: new Date().toISOString(),
-//       routeKey,
-//       requestPath: headers[':path'],
-//       requestBody: body,
-//       response: responseData
-//     };
-//     fs.appendFileSync(
-//       path.join(__dirname, '..', 'responses.log'),
-//       JSON.stringify(logEntry) + "\n"
-//     );
-
-//     stream.respond({ ':status': 200, 'content-type': 'application/json' });
-//     stream.end(JSON.stringify(responseData));
-
-//     logger.info({ routeKey, body, response: responseData }, 'File response sent');
-//   } catch (err) {
-//     logger.error({ err }, `Error in handleFileResponse for ${routeKey}`);
-//     stream.respond({ ':status': 500, 'content-type': 'application/json' });
-//     stream.end(JSON.stringify({ error: 'Internal Server Error reading file' }));
-//   }
-// }
-// function handleFileResponse(stream, headers, body, routeKey, isFailure = false, successStatus = 200) {
-//   try {
-//     const fileContent = fs.readFileSync(responseFile, 'utf8');
-//     const allResponses = JSON.parse(fileContent);
-
-//     if (!allResponses[routeKey]) {
-//       throw new Error(`No responses defined for routeKey: ${routeKey}`);
-//     }
-
-//     const responseData = isFailure
-//       ? allResponses[routeKey].failure
-//       : allResponses[routeKey].success;
-
-//     // Log request/response
-//     const logEntry = {
-//       timestamp: new Date().toISOString(),
-//       routeKey,
-//       requestPath: headers[':path'],
-//       requestBody: body,
-//       response: responseData
-//     };
-//     fs.appendFileSync(
-//       path.join(__dirname, '..', 'responses.log'),
-//       JSON.stringify(logEntry) + "\n"
-//     );
-
-//     const statusCode = isFailure ? 400 : successStatus;
-
-//     stream.respond({ ':status': statusCode, 'content-type': 'application/json' });
-//     stream.end(JSON.stringify(responseData));
-
-//     logger.info(
-//       { routeKey, statusCode, body, response: responseData },
-//       'File response sent'
-//     );
-//   } catch (err) {
-//     logger.error({ err }, `Error in handleFileResponse for ${routeKey}`);
-//     stream.respond({ ':status': 500, 'content-type': 'application/json' });
-//     stream.end(JSON.stringify({ error: 'Internal Server Error reading file' }));
-//   }
-// }
-function handleFileResponse(stream, headers, body, routeKey, isFailure = false, statusCode = 200) {
+function handleFileResponse(stream, headers, body, routeKey, isFailure = false, statusCode = 200, dynamicData = {}) {
   try {
+    const responseFile = path.join(__dirname, "..", "utils", "allresponses.json");
     const fileContent = fs.readFileSync(responseFile, "utf8");
     const allResponses = JSON.parse(fileContent);
 
@@ -98,11 +28,15 @@ function handleFileResponse(stream, headers, body, routeKey, isFailure = false, 
       throw new Error(`No responses defined for routeKey: ${routeKey}`);
     }
 
-    const responseData = isFailure
+    let responseData = isFailure
       ? allResponses[routeKey].failure
       : allResponses[routeKey].success;
 
-    // Log request/response
+    // dynamicData if provided
+    if (dynamicData && Object.keys(dynamicData).length > 0) {
+      responseData = deepMerge(responseData, dynamicData);
+    }
+
     const logEntry = {
       timestamp: new Date().toISOString(),
       routeKey,
@@ -110,18 +44,20 @@ function handleFileResponse(stream, headers, body, routeKey, isFailure = false, 
       requestBody: body,
       response: responseData,
     };
-    fs.appendFileSync(path.join(__dirname, "..", "responses.log"), JSON.stringify(logEntry) + "\n");
+    fs.appendFileSync(
+      path.join(__dirname, "..", "responses.log"),
+      JSON.stringify(logEntry) + "\n"
+    );
 
     stream.respond({ ":status": statusCode, "content-type": "application/json" });
     stream.end(JSON.stringify(responseData));
-    logger.info(`File response sent Status: ${statusCode} | Response : ${responseData}`);
+
+    logger.info(`File response sent | Status: ${statusCode} | Response: ${JSON.stringify(responseData)}`);
   } catch (err) {
     logger.error({ err }, `Error in handleFileResponse for ${routeKey}`);
     stream.respond({ ":status": 500, "content-type": "application/json" });
     stream.end(JSON.stringify({ error: "Internal Server Error reading file" }));
   }
 }
-
-
 
 module.exports = { handleFileResponse };

@@ -38,7 +38,8 @@
     "success": {
         "status": "SUCCESS",
         "statusCode": 201,
-        "message": "S-CSCF Registration successful"
+        "message": "S-CSCF Registration successful",
+        "scscfInstanceId":"bn9RqULObKo7EEdk3UkqZ"
     },
     "failure": {
       "GENERATION_ERROR": {

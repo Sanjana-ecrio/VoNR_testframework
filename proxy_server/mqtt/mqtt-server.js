@@ -42,14 +42,13 @@ function connect() {
       try {
         const payload = JSON.parse(message.toString());
         const response = await handleAuthorize(payload);
-        const { requestId } = payload.requestId;
+        const requestId = payload.requestId;
 
         logger.info({ payload }, "Payload from MQTT");
         const mqttResponse = {
-          requestId,
+          requestId : requestId,
           ...response,
         };
-        logger.info({ response }, "Response Received");
         logger.info({ mqttResponse }, "MQTT Response to be Published");
 
  
@@ -75,10 +74,10 @@ function connect() {
       try {
         const payload = JSON.parse(message.toString());
         const response = await handleGenerateSipAuth(payload);
-        const { requestId } = payload;
+        const requestId = payload?.requestId;
 
         const mqttResponse = {
-          requestId,
+          requestId: requestId,
           ...response,
         };
 
@@ -107,10 +106,11 @@ function connect() {
       try {
         const payload = JSON.parse(message.toString());
         const response = await handleScscfRegidtration(payload); 
-        const { requestId } = payload;
+        const requestId = payload?.requestId;
         const status =response.statusCode;
 
         const mqttResponse = {
+          requestId: requestId,
           status: status,
           ...response,
         };
@@ -140,10 +140,13 @@ function connect() {
   try {
     const payload = JSON.parse(message.toString());
     const response = await handleGetProfileData(payload);
-    const { correlationId, replyTo } = payload;
+    const requestId = payload?.requestId;
+    const correlationId = payload?.correlationId;
+    const replyTo = payload?.replyTo;
 
     logger.info({payload}, "Received Payload:")
     const mqttResponse = {
+      requestId:requestId,
       type: "SBI_RESPONSE",
       correlationId: correlationId || "unknown",
       status: response?.status || 200,
@@ -175,10 +178,11 @@ function connect() {
   try {
     const payload = JSON.parse(message.toString());
     const response = await handleAppSession(payload); 
-    const requestId = payload.requestId;
+    const requestId = payload?.requestId;
     const status =response.statusCode;
 
     const mqttResponse = {
+      requestId: requestId,
       status : status,
       ...response.body
     };
@@ -210,9 +214,10 @@ function connect() {
   try {
     const payload = JSON.parse(message.toString());
     const response = await handleModAppSession(payload);
-    const { requestId } = payload;
+    const requestId = payload?.requestId;
 
     const mqttResponse = {
+      requestId: requestId,
       ...response,
     };
 
