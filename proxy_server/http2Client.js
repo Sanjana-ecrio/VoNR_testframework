@@ -4,13 +4,15 @@ const fs = require("fs");
 const path = require("path");
 const config = require('./config');
 
+const logger = require('./logger');
 
-function createHttp2Client() {
+
+function createHttp2Client(sbiEndpoint) {
   let url;
   let options = {};
 
   if (config.SECURED_SBI) {
-    url = `https://${config.SBI_ENDPOINT}`;
+    url = `https://${sbiEndpoint}`;
     options = {
       rejectUnauthorized: false,
       ca: fs.existsSync(config.SBI_ENDPOINT_CERT)
@@ -18,7 +20,7 @@ function createHttp2Client() {
         : undefined,
     };
   } else {
-    url = `http://${config.SBI_ENDPOINT}`;
+    url = `http://${sbiEndpoint}`;
     options = {};
   }
 
@@ -26,7 +28,6 @@ function createHttp2Client() {
 }
 
 
-const logger = require('./logger');
 
 async function sendToHttp2Server(method, url, path, headers = {}, body = "") {
   return new Promise((resolve, reject) => {
@@ -66,11 +67,12 @@ async function sendToHttp2Server(method, url, path, headers = {}, body = "") {
 
 
 async function handleAuthorize(payload) {
-  const client = createHttp2Client();
+  const client = createHttp2Client(config.SBI_UDM_ENDPOINT);
 
   if (!payload.ueImpu) {
     throw new Error("Missing required fields for getProfileData");
   }
+
   const path = `/nhss-ims-uecm/v1/impu-${encodeURIComponent(payload.ueImpu)}/authorize`;
 
   const req = client.request({
@@ -79,7 +81,7 @@ async function handleAuthorize(payload) {
     "content-type": "application/json",
   });
 
-  logger.info({path}, "HTTP request path")
+  logger.info({ path }, "HTTP request path");
 
   const body = JSON.stringify({
     impi: payload.impi,
@@ -87,12 +89,14 @@ async function handleAuthorize(payload) {
     visitedNetworkIdentifier: payload.visitedNetworkIdentifier,
   });
 
-  logger.info({body}, "HTTP Request body")
+  logger.info({ body }, "HTTP Request body");
+
   req.write(body);
   req.end();
 
   return new Promise((resolve, reject) => {
     let data = "";
+
     req.on("data", (chunk) => {
       data += chunk;
     });
@@ -102,16 +106,31 @@ async function handleAuthorize(payload) {
       try {
         resolve(JSON.parse(data));
       } catch (err) {
-        reject(err);
+        reject(new Error("Invalid JSON response: " + err.message));
       }
     });
 
-    req.on("error", reject);
+    req.on("error", (err) => {
+      client.close();
+      reject(new Error("Authorization server request failed: " + err.message));
+    });
+
+    client.on("error", (err) => {
+      client.close();
+      reject(new Error("Authorization server connection failed: " + err.message));
+    });
+
+    req.setTimeout(5000, () => {
+      req.close();
+      client.close();
+      reject(new Error("Authorization server timeout"));
+    });
   });
 }
 
+
 async function handleGenerateSipAuth(payload) {
-  const client = createHttp2Client();
+  const client = createHttp2Client(config.SBI_UDM_ENDPOINT);
 
   if (!payload.ueImpu) {
     throw new Error("Missing required fields for getProfileData");
@@ -139,6 +158,7 @@ async function handleGenerateSipAuth(payload) {
 
   return new Promise((resolve, reject) => {
     let data = "";
+
     req.on("data", (chunk) => {
       data += chunk;
     });
@@ -148,95 +168,201 @@ async function handleGenerateSipAuth(payload) {
       try {
         resolve(JSON.parse(data));
       } catch (err) {
-        reject(err);
-      }
-    });
-
-    req.on("error", reject);
-  });
-}
-
-async function handleScscfRegidtration(payload) {
-  const client = createHttp2Client();
-  if (!payload.ueImpu) {
-    throw new Error("Missing required fields for getProfileData");
-  }
-
-  const path = `/nhss-ims-uecm/v1/impu-${encodeURIComponent(payload.ueImpu)}/scscf-registration`
-  const req = client.request({
-    ":method": "PUT",
-    ":path": path,
-    "content-type": "application/json",
-  });
-
-  if (!payload.cscfServerName || !payload.imsRegistrationType || !payload.scscfInstanceId) {
-    throw new Error("Missing required fields for scscf-registration");
-  }
-
-  const body = JSON.stringify({
-    cscfServerName: payload.cscfServerName,
-    imsRegistrationType: payload.imsRegistrationType,
-    scscfInstanceId: payload.scscfInstanceId,
-  });
-
-  req.write(body);
-  req.end();
-
-  return new Promise((resolve, reject) => {
-    let data = "";
-    req.on("data", (chunk) => {
-      data += chunk;
-    });
-
-    req.on("end", () => {
-      client.close();
-      try {
-        resolve(JSON.parse(data));
-      } catch (err) {
-        reject(err);
-      }
-    });
-
-    req.on("error", reject);
-  });
-}
-
-async function handleGetProfileData(payload) {
-  if (!payload.ueImpu) {
-    throw new Error("Missing required fields for getProfileData");
-  }
-
-   const path = `/nhss-ims-sdm/v1/impu-${encodeURIComponent(payload.ueImpu)}/ims-data/profile-data`
-
-  const client = createHttp2Client();
-
-  const req = client.request({
-    ":method": payload.method || "GET",
-    ":path": path,
-    ...(payload.headers || { Accept: "application/json" }),
-  });
-
-  req.end(); // GET request → no body
-
-  return new Promise((resolve, reject) => {
-    let data = "";
-    req.on("data", (chunk) => {
-      data += chunk;
-    });
-
-    req.on("end", () => {
-      client.close();
-      try {
-        resolve(JSON.parse(data));
-      } catch (err) {
-        reject(err);
+        reject(new Error("Invalid JSON response: " + err.message));
       }
     });
 
     req.on("error", (err) => {
       client.close();
-      reject(err);
+      reject(new Error("Authorization server request failed: " + err.message));
     });
+
+    client.on("error", (err) => {
+      client.close();
+      reject(new Error("Authorization server connection failed: " + err.message));
+    });
+
+    req.setTimeout(5000, () => {
+      req.close();
+      client.close();
+      reject(new Error("Authorization server timeout"));
+    });
+  });
+}
+
+// async function handleScscfRegidtration(payload) {
+//   const client = createHttp2Client(config.SBI_UDM_ENDPOINT);
+//   if (!payload.ueImpu) {
+//     throw new Error("Missing required fields for getProfileData");
+//   }
+
+//   const path = `/nhss-ims-uecm/v1/impu-${encodeURIComponent(payload.ueImpu)}/scscf-registration`
+//   const req = client.request({
+//     ":method": "PUT",
+//     ":path": path,
+//     "content-type": "application/json",
+//   });
+
+//   if (!payload.cscfServerName || !payload.imsRegistrationType || !payload.scscfInstanceId) {
+//     throw new Error("Missing required fields for scscf-registration");
+//   }
+
+//   const body = JSON.stringify({
+//     cscfServerName: payload.cscfServerName,
+//     imsRegistrationType: payload.imsRegistrationType,
+//     scscfInstanceId: payload.scscfInstanceId,
+//   });
+
+//   req.write(body);
+//   req.end();
+
+//   return new Promise((resolve, reject) => {
+//     let data = "";
+
+//     req.on("data", (chunk) => {
+//       data += chunk;
+//     });
+
+//     req.on("end", () => {
+//       client.close();
+//       try {
+//         resolve(JSON.parse(data));
+//       } catch (err) {
+//         reject(new Error("Invalid JSON response: " + err.message));
+//       }
+//     });
+
+//     req.on("error", (err) => {
+//       client.close();
+//       reject(new Error("Authorization server request failed: " + err.message));
+//     });
+
+//     client.on("error", (err) => {
+//       client.close();
+//       reject(new Error("Authorization server connection failed: " + err.message));
+//     });
+
+//     req.setTimeout(5000, () => {
+//       req.close();
+//       client.close();
+//       reject(new Error("Authorization server timeout"));
+//     });
+//   });
+// }
+
+async function handleScscfRegidtration(payload) {
+  return new Promise((resolve, reject) => {
+    const client = createHttp2Client(config.SBI_UDM_ENDPOINT);
+
+    if (!payload.ueImpu) {
+      return reject(new Error("Missing required fields for scscf-registration"));
+    }
+
+    const path = `/nhss-ims-uecm/v1/impu-${encodeURIComponent(payload.ueImpu)}/scscf-registration`;
+    const req = client.request({
+      ":method": "PUT",
+      ":path": path,
+      "content-type": "application/json",
+    });
+
+    if (!payload.cscfServerName || !payload.imsRegistrationType || !payload.scscfInstanceId) {
+      return reject(new Error("Missing required fields for scscf-registration"));
+    }
+
+    const body = JSON.stringify({
+      cscfServerName: payload.cscfServerName,
+      imsRegistrationType: payload.imsRegistrationType,
+      scscfInstanceId: payload.scscfInstanceId,
+    });
+
+    req.write(body);
+    req.end();
+
+    let data = "";
+
+    req.on("data", (chunk) => {
+      data += chunk;
+    });
+
+    req.on("end", () => {
+      client.close();
+      try {
+        resolve(JSON.parse(data));
+      } catch (err) {
+        reject(new Error("Invalid JSON response: " + err.message));
+      }
+    });
+
+    req.on("error", (err) => {
+      client.close();
+      reject(new Error("S-CSCF request failed: " + err.message));
+    });
+
+    client.on("error", (err) => {
+      client.close();
+      reject(new Error("S-CSCF connection failed: " + err.message));
+    });
+
+    req.setTimeout(5000, () => {
+      req.close();
+      client.close();
+      reject(new Error("S-CSCF request timeout"));
+    });
+  });
+}
+
+async function handleGetProfileData(payload) {
+  return new Promise((resolve, reject) => {
+    if (!payload.ueImpu) {
+      return reject(new Error("Missing required fields for getProfileData"));
+    }
+
+    const path = `/nhss-ims-sdm/v1/impu-${encodeURIComponent(payload.ueImpu)}/ims-data/profile-data`;
+    const client = createHttp2Client(config.SBI_UDM_ENDPOINT);
+
+    const req = client.request({
+      ":method": payload.method || "GET",
+      ":path": path,
+      ...(payload.headers || { Accept: "application/json" }),
+    });
+
+    let data = "";
+
+    req.on("response", (headers) => {
+      logger.info({ headers }, "Response headers from profile-data");
+    });
+
+    req.on("data", (chunk) => {
+      data += chunk;
+    });
+
+    req.on("end", () => {
+      client.close();
+      try {
+        resolve(JSON.parse(data));
+      } catch (err) {
+        reject(new Error("Invalid JSON response: " + err.message));
+      }
+    });
+
+    req.on("error", (err) => {
+      client.close();
+      reject(new Error("ProfileData request failed: " + err.message));
+    });
+
+    client.on("error", (err) => {
+      client.close();
+      reject(new Error("ProfileData connection failed: " + err.message));
+    });
+
+    req.setTimeout(5000, () => {
+      req.close();
+      client.close();
+      reject(new Error("ProfileData request timeout"));
+    });
+
+    // For GET, don’t send a body
+    req.end();
   });
 }
 
@@ -244,7 +370,7 @@ async function handleGetProfileData(payload) {
 
 
 async function handleAppSession(payload) {
-  const client = createHttp2Client();
+  const client = createHttp2Client(config.SBI_PCF_ENDPOINT);
 
   const path = `/npcf-policyauthorization/v1/app-sessions`;
   const req = client.request({
@@ -270,7 +396,6 @@ async function handleAppSession(payload) {
       statusCode = headers[":status"];
       console.log("response headers:", headers);
     });
-
     req.on("data", (chunk) => {
       data += chunk;
     });
@@ -279,20 +404,29 @@ async function handleAppSession(payload) {
       client.close();
       try {
         const parsed = data ? JSON.parse(data) : null;
-        console.log(`recieved status: ${statusCode}, body:`, parsed);
-
         resolve({
           statusCode,
           body: parsed,
         });
       } catch (err) {
-        reject(err);
+        reject(new Error("Invalid JSON response: " + err.message));
       }
     });
 
     req.on("error", (err) => {
       client.close();
-      reject(err);
+      reject(new Error("Authorization server request failed: " + err.message));
+    });
+
+    client.on("error", (err) => {
+      client.close();
+      reject(new Error("Authorization server connection failed: " + err.message));
+    });
+
+    req.setTimeout(5000, () => {
+      req.close();
+      client.close();
+      reject(new Error("Authorization server timeout"));
     });
   });
 }
@@ -304,7 +438,7 @@ async function handleModAppSession(payload) {
     throw new Error("Missing required fields for modAppSession");
   }
   
-  const client = createHttp2Client();
+  const client = createHttp2Client(config.SBI_PCF_ENDPOINT);
 
   const method = payload.httpMethod || "PATCH"
   const path = payload.sbiEndpoint;
@@ -319,19 +453,17 @@ async function handleModAppSession(payload) {
   }
 
   const body = JSON.stringify({ ascReqData: payload.ascReqData });
-  req.write(body);
+req.write(body);
   req.end();
 
   return new Promise((resolve, reject) => {
     let data = "";
     let statusCode;
 
-    // Capture status from headers
     req.on("response", (headers) => {
       statusCode = headers[":status"];
       console.log("response headers:", headers);
     });
-
     req.on("data", (chunk) => {
       data += chunk;
     });
@@ -339,21 +471,26 @@ async function handleModAppSession(payload) {
     req.on("end", () => {
       client.close();
       try {
-        const parsed = data ? JSON.parse(data) : null;
-        console.log(`recieved status: ${statusCode}, body:`, parsed);
-
-        resolve({
-          statusCode,
-          body: parsed,
-        });
+        resolve(JSON.parse(data));
       } catch (err) {
-        reject(err);
+        reject(new Error("Invalid JSON response: " + err.message));
       }
     });
 
     req.on("error", (err) => {
       client.close();
-      reject(err);
+      reject(new Error("Authorization server request failed: " + err.message));
+    });
+
+    client.on("error", (err) => {
+      client.close();
+      reject(new Error("Authorization server connection failed: " + err.message));
+    });
+
+    req.setTimeout(5000, () => {
+      req.close();
+      client.close();
+      reject(new Error("Authorization server timeout"));
     });
   });
 }

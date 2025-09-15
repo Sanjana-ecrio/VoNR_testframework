@@ -1,6 +1,8 @@
 module.exports = {
   PORT: 4000, 
   SBI_ENDPOINT: "192.168.56.1:3000",
+  SBI_UDM_ENDPOINT: "192.168.56.1:3000",
+  SBI_PCF_ENDPOINT: "192.168.56.1:3000",
   SECURED_SBI: true, // true = TLS-https, false = cleartext-http
   AUTH_TOKEN: "Bearer abc123456789",
   PATH_REWRITE: {
